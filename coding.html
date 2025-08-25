@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎮 GameHub – 3 in 1</title>
+
+  <!-- Sounds & Music -->
+  <audio id="winSound" src="https://www.soundjay.com/button/sounds/button-4.mp3"></audio>
+  <audio id="matchSound" src="https://www.soundjay.com/button/sounds/button-10.mp3"></audio>
+  <audio id="typeDone" src="https://www.soundjay.com/button/sounds/button-3.mp3"></audio>
+  <audio id="bgMusic" src="https://www.bensound.com/bensound-music/bensound-epic.mp3" loop></audio>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background-color: var(--bg);
+      color: var(--text);
+      transition: background 0.3s, color 0.3s;
+      text-align: center;
+      padding: 20px;
+    }
+
+    :root {
+      --bg: #0f0f0f;
+      --text: #fff;
+      --card: #222;
+      --highlight: #09f;
+      --btn-bg: #292929;
+    }
+
+    body.light {
+      --bg: #f9f9f9;
+      --text: #111;
+      --card: #e2e2e2;
+      --highlight: #007acc;
+      --btn-bg: #ccc;
+    }
+
+    h1 { margin-bottom: 10px; }
+
+    .nav-buttons, .top-controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: var(--btn-bg);
+      color: var(--text);
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: var(--highlight);
+      color: #fff;
+    }
+
+    .game-section { display: none; }
+    .active { display: block; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+      max-width: 400px;
+      gap: 10px;
+      margin: 0 auto;
+    }
+
+    .card {
+      height: 60px;
+      background: var(--card);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .card.flipped { background: var(--highlight); }
+
+    .choices {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      font-size: 2rem;
+    }
+
+    .choice {
+      padding: 10px;
+      background: var(--card);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #typingInput {
+      padding: 10px;
+      font-size: 1.1rem;
+      width: 80%;
+      max-width: 500px;
+      margin-top: 15px;
+    }
+
+    #quote {
+      margin: 20px auto;
+      padding: 15px;
+      background: var(--card);
+      border-radius: 8px;
+      max-width: 600px;
+      font-size: 1.2rem;
+    }
+
+    #congratsPopup {
+      position: fixed;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--card);
+      color: var(--text);
+      padding: 30px 40px;
+      border-radius: 12px;
+      font-size: 1.3rem;
+      box-shadow: 0 0 15px #000;
+      display: none;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎮 GameHub – 3 in 1</h1>
+
+  <div class="top-controls">
+    <button onclick="toggleTheme()">🌓 Toggle Theme</button>
+    <button onclick="toggleMusic()">🎵 Music: <span id="musicStatus">Off</span></button>
+  </div>
+
+  <div class="nav-buttons">
+    <button onclick="showGame('memory')">🧠 Memory</button>
+    <button onclick="showGame('rps')">✊ RPS</button>
+    <button onclick="showGame('typing')">⌨️ Typing</button>
+  </div>
+
+  <!-- Memory Game -->
+  <div class="game-section" id="memory">
+    <h2>🧠 Memory Game</h2>
+    <div class="grid" id="memoryGrid"></div>
+    <div id="memoryMessage"></div>
+    <div>🏆 Best: <span id="memoryBest">0</span> pairs</div>
+    <button onclick="createMemoryGame()">🔄 Restart</button>
+  </div>
+
+  <!-- RPS -->
+  <div class="game-section" id="rps">
+    <h2>✊ Rock Paper Scissors</h2>
+    <div class="choices">
+      <div class="choice" data-choice="rock">✊</div>
+      <div class="choice" data-choice="paper">🖐</div>
+      <div class="choice" data-choice="scissors">✌️</div>
+    </div>
+    <div id="rpsResult" style="margin-top: 15px;"></div>
+  </div>
+
+  <!-- Typing -->
+  <div class="game-section" id="typing">
+    <h2>⌨️ Typing Speed Test</h2>
+    <div id="quote"></div>
+    <input type="text" id="typingInput" placeholder="Start typing..." />
+    <div id="typingResult"></div>
+    <div>🏅 Best WPM: <span id="typingBest">0</span></div>
+    <button onclick="resetTyping()">🔁 Try Again</button>
+  </div>
+
+  <!-- Popup -->
+  <div id="congratsPopup">🎉 Congratulations!</div>
+
+  <script>
+    function showGame(id) {
+      document.querySelectorAll('.game-section').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function showCongrats(msg = "🎉 Well Done!") {
+      const popup = document.getElementById('congratsPopup');
+      popup.innerText = msg;
+      popup.style.display = 'block';
+      setTimeout(() => popup.style.display = 'none', 2500);
+    }
+
+    // Theme toggle
+    function toggleTheme() {
+      document.body.classList.toggle('light');
+    }
+
+    // Music toggle
+    const bgMusic = document.getElementById('bgMusic');
+    function toggleMusic() {
+      const status = document.getElementById('musicStatus');
+      if (bgMusic.paused) {
+        bgMusic.play();
+        status.textContent = 'On';
+      } else {
+        bgMusic.pause();
+        status.textContent = 'Off';
+      }
+    }
+
+    // Memory Game
+    const memoryEmojis = ['🐶','🐶','🐱','🐱','🐷','🐷','🐸','🐸','🐰','🐰'];
+    const memoryGrid = document.getElementById('memoryGrid');
+    const memoryBest = document.getElementById('memoryBest');
+    let memoryFirst = null, lockMemory = false;
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    function createMemoryGame() {
+      shuffle(memoryEmojis);
+      memoryGrid.innerHTML = '';
+      memoryFirst = null;
+      lockMemory = false;
+      let matched = 0;
+      memoryEmojis.forEach(emoji => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.value = emoji;
+        card.innerText = '';
+        card.addEventListener('click', () => {
+          if (lockMemory || card.classList.contains('flipped')) return;
+          card.innerText = emoji;
+          card.classList.add('flipped');
+          if (!memoryFirst) {
+            memoryFirst = card;
+          } else {
+            lockMemory = true;
+            if (card.dataset.value === memoryFirst.dataset.value) {
+              memoryFirst = null;
+              lockMemory = false;
+              matched += 2;
+              if (matched === memoryEmojis.length) {
+                document.getElementById('matchSound').play();
+                showCongrats("🧠 Memory Complete!");
+                const best = Math.max(Number(localStorage.getItem("memoryBest") || 0), matched / 2);
+                localStorage.setItem("memoryBest", best);
+                memoryBest.textContent = best;
+              }
+            } else {
+              setTimeout(() => {
+                card.innerText = '';
+                memoryFirst.innerText = '';
+                card.classList.remove('flipped');
+                memoryFirst.classList.remove('flipped');
+                memoryFirst = null;
+                lockMemory = false;
+              }, 800);
+            }
+          }
+        });
+        memoryGrid.appendChild(card);
+      });
+    }
+
+    // Rock Paper Scissors
+    document.querySelectorAll('.choice').forEach(c => {
+      c.addEventListener('click', () => {
+        const player = c.dataset.choice;
+        const comp = ['rock', 'paper', 'scissors'][Math.floor(Math.random() * 3)];
+        let res = "";
+        if (player === comp) {
+          res = "🤝 It's a draw!";
+        } else if (
+          (player === 'rock' && comp === 'scissors') ||
+          (player === 'paper' && comp === 'rock') ||
+          (player === 'scissors' && comp === 'paper')
+        ) {
+          document.getElementById('winSound').play();
+          showCongrats("🏆 You win!");
+          res = "✅ You win!";
+        } else {
+          res = "❌ You lose!";
+        }
+        document.getElementById('rpsResult').innerHTML =
+          `You: <b>${player}</b> | Computer: <b>${comp}</b><br>${res}`;
+      });
+    });
+
+    // Typing Test
+    const quotes = [
+      "The quick brown fox jumps over the lazy dog.",
+      "Typing games improve both speed and accuracy.",
+      "JavaScript powers the web in many fun ways."
+    ];
+    const quoteEl = document.getElementById('quote');
+    const typingInput = document.getElementById('typingInput');
+    const typingResult = document.getElementById('typingResult');
+    const typingBest = document.getElementById('typingBest');
+    let currentQuote = "", startTime = null;
+
+    function setNewQuote() {
+      currentQuote = quotes[Math.floor(Math.random() * quotes.length)];
+      quoteEl.innerText = currentQuote;
+      typingInput.value = '';
+      typingInput.disabled = false;
+      typingResult.innerText = '';
+      startTime = null;
+    }
+
+    typingInput.addEventListener('focus', () => {
+      if (!startTime) startTime = new Date().getTime();
+    });
+
+    typingInput.addEventListener('input', () => {
+      if (typingInput.value === currentQuote) {
+        const endTime = new Date().getTime();
+        const time = (endTime - startTime) / 1000;
+        const words = currentQuote.trim().split(/\s+/).length;
+        const wpm = Math.round((words / time) * 60);
+        typingResult.innerHTML = `🎯 <strong>${wpm} WPM</strong> in ${time.toFixed(2)}s`;
+        typingInput.disabled = true;
+        document.getElementById('typeDone').play();
+        showCongrats(`⌨️ Typed at ${wpm} WPM`);
+
+        const best = Math.max(Number(localStorage.getItem("typingBest") || 0), wpm);
+        localStorage.setItem("typingBest", best);
+        typingBest.textContent = best;
+      }
+    });
+
+    function resetTyping() {
+      setNewQuote();
+    }
+
+    // Init
+    window.onload = () => {
+      showGame('memory');
+      createMemoryGame();
+      setNewQuote();
+      typingBest.textContent = localStorage.getItem("typingBest") || 0;
+      memoryBest.textContent = localStorage.getItem("memoryBest") || 0;
+    };
+  </script>
+</body>
+</html>
